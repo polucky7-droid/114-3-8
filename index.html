@@ -1,13 +1,150 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>十六進位相加與 ASCII 轉換器 - ASCII Converter</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16進位相加與 ASCII 轉換器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
 
+    <div class="max-w-md w-full glass rounded-3xl shadow-2xl p-8 space-y-6">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">16 進位計算工具</h1>
+            <p class="text-gray-500 text-sm mt-2">輸入 16 進位數值，計算總和並轉為 ASCII</p>
+        </div>
+
+        <div class="space-y-4">
+            <!-- 輸入區域 -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">16 進位數值輸入</label>
+                <textarea 
+                    id="hexInput" 
+                    placeholder="例如: 37 30 30 30 35 03"
+                    class="w-full h-32 px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all font-mono"
+                ></textarea>
+                <p class="text-xs text-gray-400 mt-1">可以使用空格、逗號或換行分隔</p>
+            </div>
+
+            <!-- 操作按鈕 -->
+            <button 
+                onclick="calculateHex()"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg transition-transform active:scale-95"
+            >
+                開始計算
+            </button>
+
+            <!-- 輸出區域 -->
+            <div id="resultSection" class="hidden space-y-4 animate-in fade-in duration-500">
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">輸出 1: 最後兩位 HEX (Checksum)</label>
+                    <div id="output1" class="text-2xl font-mono font-bold text-blue-600 mt-1">--</div>
+                    <button onclick="copyText('output1')" class="text-xs text-blue-500 hover:text-blue-700 mt-1 focus:outline-none">點擊複製</button>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">輸出 2: ASCII 16進位碼</label>
+                    <div id="output2" class="text-2xl font-mono font-bold text-indigo-600 mt-1">--</div>
+                    <button onclick="copyText('output2')" class="text-xs text-indigo-500 hover:text-indigo-700 mt-1 focus:outline-none">點擊複製</button>
+                </div>
+            </div>
+
+            <!-- 錯誤提示 -->
+            <div id="errorMessage" class="hidden p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 text-center">
+                輸入包含非法的 16 進位字符
+            </div>
+        </div>
+
+        <div class="text-center pt-4 border-t border-gray-100">
+            <p class="text-xs text-gray-400 italic">範例：37 30 30 30 35 03 → FF, 46 46</p>
+        </div>
+    </div>
+
+    <script>
+        function calculateHex() {
+            const input = document.getElementById('hexInput').value.trim();
+            const resultSection = document.getElementById('resultSection');
+            const errorMessage = document.getElementById('errorMessage');
+            const output1 = document.getElementById('output1');
+            const output2 = document.getElementById('output2');
+
+            if (!input) return;
+
+            // 1. 清理輸入資料，提取 16 進位數字
+            // 使用正則表達式尋找所有的 hex 數字 (0-9, A-F)
+            const hexParts = input.match(/[0-9A-Fa-f]+/g);
+
+            if (!hexParts) {
+                errorMessage.classList.remove('hidden');
+                resultSection.classList.add('hidden');
+                return;
+            }
+
+            try {
+                // 2. 相加所有數字
+                let totalSum = 0;
+                hexParts.forEach(hex => {
+                    totalSum += parseInt(hex, 16);
+                });
+
+                // 3. 取最後兩位 (Modulo 256)
+                const lastTwoHex = (totalSum & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+                
+                // 4. 轉換為 ASCII 的 16 進位表現
+                // 例如: "F" 的 ASCII 是 70 (0x46)
+                let asciiHexResult = "";
+                for (let i = 0; i < lastTwoHex.length; i++) {
+                    const charCode = lastTwoHex.charCodeAt(i);
+                    asciiHexResult += charCode.toString(16).toUpperCase() + (i === lastTwoHex.length - 1 ? "" : " ");
+                }
+
+                // 顯示結果
+                output1.innerText = lastTwoHex;
+                output2.innerText = asciiHexResult;
+
+                errorMessage.classList.add('hidden');
+                resultSection.classList.remove('hidden');
+            } catch (e) {
+                errorMessage.classList.remove('hidden');
+                resultSection.classList.add('hidden');
+            }
+        }
+
+        // 複製功能
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            // 簡單的視覺回饋
+            const originalText = document.getElementById(elementId).innerText;
+            document.getElementById(elementId).innerText = "已複製！";
+            setTimeout(() => {
+                document.getElementById(elementId).innerText = originalText;
+            }, 1000);
+        }
+
+        // 監聽鍵盤 Enter 鍵
+        document.getElementById('hexInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                calculateHex();
+            }
+        });
+    </script>
+</body>
+</html>
